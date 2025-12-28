@@ -1,0 +1,41 @@
+FROM docker.io/oven/bun:latest
+
+# Install system dependencies
+# @todo think about how to pass credentials, currently need local run `gh auth login --web --git-protocol` and $HOME:/root/:ro mounts
+RUN mkdir -p -m 755 /etc/apt/keyrings && \
+    curl -o /etc/apt/keyrings/githubcli-archive-keyring.gpg -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg && \
+    chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list > /dev/null && \
+    apt update && \
+    apt install -y \
+    screen \
+    curl \
+    git git-lfs gh \
+    netcat-openbsd \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create necessary directories
+RUN mkdir -p /root/.claude-code-router \
+    /root/.local/share/vibe-kanban \
+    && mkdir -p /app
+
+WORKDIR /app
+
+# Install bun packages globally
+RUN bun install -g @anthropic-ai/claude-code @musistudio/claude-code-router vibe-kanban@latest
+
+RUN claude mcp add --scope user --transport http gitmcp  https://gitmcp.io/docs/
+RUN claude mcp add --scope user vibe_kanban -e PORT="${VIBE_KANBAN_PORT:-8888}"  -- bunx --bun vibe-kanban@latest --mcp
+RUN claude mcp list
+
+RUN qwen mcp add --scope user --transport http gitmcp https://gitmcp.io/docs/
+RUN qwen mcp add --scope user vibe_kanban bunx --bun vibe-kanban@latest --mcp -e PORT="${VIBE_KANBAN_PORT:-8888}"
+RUN qwen mcp list
+
+# Copy startup script
+COPY docker/run-vibe-kanban.sh /startup.sh
+RUN chmod +x /startup.sh
+
+EXPOSE 8888
+
+CMD ["/startup.sh"]

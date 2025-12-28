@@ -1,0 +1,96 @@
+services:
+  max-inference:
+    image: modular/max-nvidia-full:latest
+    volumes:
+      - ${HOME}/.cache/huggingface:/root/.cache/huggingface:rw
+      - ${HOME}/.cache/max_cache:/opt/venv/share/max/.max_cache:rw
+    command:
+      - --port
+      - "8100"
+      - --model
+      - Qwen/Qwen3-Coder-30B-A3B-Instruct-FP8
+      - --trust-remote-code
+    ports:
+      - "127.0.0.1:8100:8100"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]
+    networks:
+      - spark-network
+    environment:
+      - HF_TOKEN=${HF_TOKEN:-}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8100/health"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  llama.cpp:
+    build:
+      context: .
+      dockerfile: Dockerfile.llama.cpp.spark
+    image: "llama.cpp:spark-full"
+    volumes:
+      - ${HOME}/.cache/huggingface:/models/huggingface:ro
+      - ./llama.cpp.models.ini:/etc/llama.cpp/config.ini
+    entrypoint: /app/llama-server
+    command:
+      - --models-max
+      - "1"
+      - --models-preset
+      - /etc/llama.cpp/config.ini
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8090"
+    ports:
+      - "127.0.0.1:8090:8090"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]
+    networks:
+      - spark-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8090/health"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  vibe-kanban:
+    build:
+      context: .
+      dockerfile: Dockerfile.vibe-kanban
+    image: vibe-kanban:spark
+    volumes:
+      - ${HOME}:/root/
+      - /tmp:/tmp
+    ports:
+      - "${VIBE_KANBAN_PORT:-8888}:${VIBE_KANBAN_PORT:-8888}"
+    networks:
+      - spark-network
+    environment:
+      - HOME=/root
+      - AGENT_INFERENCE_SERVER=${AGENT_INFERENCE_SERVER:-max-inference}
+      - AGENT_MAIN_MODEL=${AGENT_MAIN_MODEL:-noctrex/MiniMax-M2-REAP-139B-A10B-MXFP4_MOE-GGUF}
+      - AGENT_BACKGROUND_MODEL=${AGENT_BACKGROUND_MODEL:-noctrex/MiniMax-M2-REAP-139B-A10B-MXFP4_MOE-GGUF}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8888/health"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+networks:
+  spark-network:
+    driver: bridge
+    
