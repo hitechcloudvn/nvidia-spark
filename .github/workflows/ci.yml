@@ -1,0 +1,54 @@
+# =============================================================================
+# ci.yml — Kiểm tra nhanh trên mỗi push/PR / Fast checks on every push/PR
+#
+# EN: Syntax-checks every shell script, runs ShellCheck, and validates the
+#     YAML files. Heavy image builds only run on release tags — see release.yml.
+# VI: Kiểm tra cú pháp mọi script shell, chạy ShellCheck, kiểm tra file YAML.
+#     Việc build ảnh nặng chỉ chạy theo tag release — xem release.yml.
+#
+# Repo: https://github.com/hitechcloudvn/nvidia-spark
+#       https://gitlab.com/hitechcloudvn/nvidia-spark
+# =============================================================================
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint:
+    name: Lint / Kiểm tra
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout / Tải mã nguồn
+        uses: actions/checkout@v4
+
+      - name: Install tools / Cài công cụ
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck python3-yaml
+
+      - name: Bash syntax check / Kiểm tra cú pháp bash
+        run: |
+          set -euo pipefail
+          for f in *.sh docker/*.sh; do
+            bash -n "$f"
+            echo "OK bash -n: $f"
+          done
+
+      - name: ShellCheck
+        run: shellcheck -S error *.sh docker/*.sh
+
+      - name: Validate YAML / Kiểm tra YAML
+        run: |
+          python3 - <<'PY'
+          import glob
+          import yaml
+
+          files = ["docker-compose.yaml", ".gitlab-ci.yml"] + glob.glob(".github/workflows/*.yml")
+          for f in files:
+              with open(f, encoding="utf-8") as fh:
+                  yaml.safe_load(fh)
+              print("OK yaml:", f)
+          PY

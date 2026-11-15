@@ -1,0 +1,70 @@
+# =============================================================================
+# .gitlab-ci.yml — CI/CD GitLab cho nvidia-spark / GitLab CI/CD for nvidia-spark
+#
+# EN: Lint on every push/MR; on v* tags a GitLab Release is created from
+#     CHANGELOG.md. Container images are built and published to GHCR by
+#     GitHub Actions (.github/workflows/release.yml) — GitLab mirrors the
+#     release metadata so both platforms stay in sync.
+# VI: Lint trên mọi push/MR; khi có tag v* sẽ tạo GitLab Release từ
+#     CHANGELOG.md. Ảnh container được GitHub Actions build và đẩy lên GHCR
+#     (.github/workflows/release.yml) — GitLab đối chiếu metadata release để
+#     hai nền tảng luôn đồng bộ.
+#
+# Repo: https://github.com/hitechcloudvn/nvidia-spark
+#       https://gitlab.com/hitechcloudvn/nvidia-spark
+# =============================================================================
+stages:
+  - lint
+  - release
+
+default:
+  image: alpine:3.20
+
+lint:
+  stage: lint
+  before_script:
+    - apk add --no-cache bash shellcheck python3 py3-yaml
+  script:
+    - |
+      set -euo pipefail
+      for f in *.sh docker/*.sh; do
+        bash -n "$f"
+        echo "OK bash -n: $f"
+      done
+    - shellcheck -S error *.sh docker/*.sh
+    - |
+      python3 - <<'PY'
+      import glob
+      import yaml
+
+      files = ["docker-compose.yaml", ".gitlab-ci.yml"] + glob.glob(".github/workflows/*.yml")
+      for f in files:
+          with open(f, encoding="utf-8") as fh:
+              yaml.safe_load(fh)
+          print("OK yaml:", f)
+      PY
+
+release:
+  stage: release
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v/
+  before_script:
+    - apk add --no-cache bash sed gawk
+  script:
+    - |
+      set -euo pipefail
+      SECTION="${CI_COMMIT_TAG#v}"
+      awk -v tag="[${SECTION}]" '
+        index($0, "## " tag) == 1 {grab=1; next}
+        grab && /^## \[/ {exit}
+        grab {print}
+      ' CHANGELOG.md | sed '/./,$!d' > release-notes.md
+      if [ ! -s release-notes.md ]; then
+        echo "Release ${CI_COMMIT_TAG}" > release-notes.md
+      fi
+      cat release-notes.md
+  release:
+    tag_name: $CI_COMMIT_TAG
+    name: "Release $CI_COMMIT_TAG"
+    description: release-notes.md
+    ref: $CI_COMMIT_TAG

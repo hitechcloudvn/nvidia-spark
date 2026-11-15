@@ -1,0 +1,214 @@
+# =============================================================================
+# release.yml — Phát hành theo tag vX.Y.Z / Release on vX.Y.Z tags
+#
+# EN: Builds the container images on GitHub-hosted arm64 runners and pushes
+#     them to GHCR, then publishes the GitHub Release from CHANGELOG.md.
+#     The heavy CUDA image builds (llama.cpp, vllm) are non-blocking
+#     (continue-on-error) so a release always publishes even when fragile
+#     upstream GPU builds fail. Upstream pins: LLAMA_CPP_REF / VLLM_REF.
+# VI: Build các ảnh container trên runner arm64 của GitHub và đẩy lên GHCR,
+#     rồi tạo GitHub Release từ CHANGELOG.md. Các build CUDA nặng (llama.cpp,
+#     vllm) không chặn (continue-on-error) để release luôn được phát hành ngay
+#     khi build GPU upstream gặp lỗi. Ghim upstream: LLAMA_CPP_REF / VLLM_REF.
+#
+# Repo: https://github.com/hitechcloudvn/nvidia-spark
+#       https://gitlab.com/hitechcloudvn/nvidia-spark
+# =============================================================================
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/hitechcloudvn/nvidia-spark
+  LLAMA_CPP_REF: v1.0.0
+  VLLM_REF: v0.33.0
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  lint:
+    name: Lint / Kiểm tra
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout / Tải mã nguồn
+        uses: actions/checkout@v4
+
+      - name: Install tools / Cài công cụ
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck python3-yaml
+
+      - name: Bash syntax check / Kiểm tra cú pháp bash
+        run: |
+          set -euo pipefail
+          for f in *.sh docker/*.sh; do
+            bash -n "$f"
+            echo "OK bash -n: $f"
+          done
+
+      - name: ShellCheck
+        run: shellcheck -S error *.sh docker/*.sh
+
+      - name: Validate YAML / Kiểm tra YAML
+        run: |
+          python3 - <<'PY'
+          import glob
+          import yaml
+
+          files = ["docker-compose.yaml", ".gitlab-ci.yml"] + glob.glob(".github/workflows/*.yml")
+          for f in files:
+              with open(f, encoding="utf-8") as fh:
+                  yaml.safe_load(fh)
+              print("OK yaml:", f)
+          PY
+
+  build-vibe-kanban:
+    name: Build vibe-kanban / Build ảnh vibe-kanban
+    runs-on: ubuntu-24.04-arm
+    needs: [lint]
+    steps:
+      - name: Checkout / Tải mã nguồn
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx / Thiết lập Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR / Đăng nhập GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push / Build và đẩy ảnh
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.vibe-kanban
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}/vibe-kanban:spark
+            ${{ env.IMAGE_PREFIX }}/vibe-kanban:latest
+            ${{ env.IMAGE_PREFIX }}/vibe-kanban:${{ github.ref_name }}
+
+  build-llama.cpp:
+    name: Build llama.cpp / Build ảnh llama.cpp (non-blocking)
+    runs-on: ubuntu-24.04-arm
+    needs: [lint]
+    continue-on-error: true
+    steps:
+      - name: Checkout nvidia-spark / Tải mã nguồn nvidia-spark
+        uses: actions/checkout@v4
+        with:
+          path: spark
+
+      - name: Checkout llama.cpp (pinned) / Tải llama.cpp (ghim version)
+        uses: actions/checkout@v4
+        with:
+          repository: ggml-org/llama.cpp
+          ref: ${{ env.LLAMA_CPP_REF }}
+          path: llama.cpp
+
+      - name: Set up Docker Buildx / Thiết lập Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR / Đăng nhập GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push / Build và đẩy ảnh
+        uses: docker/build-push-action@v6
+        with:
+          context: ./llama.cpp
+          file: ./spark/Dockerfile.llama.cpp.spark
+          target: full
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}/llama.cpp:spark-full
+            ${{ env.IMAGE_PREFIX }}/llama.cpp:latest
+            ${{ env.IMAGE_PREFIX }}/llama.cpp:${{ github.ref_name }}
+
+  build-vllm:
+    name: Build vllm / Build ảnh vllm (non-blocking)
+    runs-on: ubuntu-24.04-arm
+    needs: [lint]
+    continue-on-error: true
+    steps:
+      - name: Checkout nvidia-spark / Tải mã nguồn nvidia-spark
+        uses: actions/checkout@v4
+        with:
+          path: spark
+
+      - name: Checkout vllm (pinned) / Tải vllm (ghim version)
+        uses: actions/checkout@v4
+        with:
+          repository: vllm-project/vllm
+          ref: ${{ env.VLLM_REF }}
+          path: vllm
+
+      - name: Set up Docker Buildx / Thiết lập Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR / Đăng nhập GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push / Build và đẩy ảnh
+        uses: docker/build-push-action@v6
+        with:
+          context: ./vllm
+          file: ./spark/Dockerfile.vllm.spark
+          target: vllm-base
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}/vllm:spark
+            ${{ env.IMAGE_PREFIX }}/vllm:latest
+            ${{ env.IMAGE_PREFIX }}/vllm:${{ github.ref_name }}
+
+  release:
+    name: GitHub Release / Phát hành GitHub
+    runs-on: ubuntu-24.04
+    needs: [lint, build-vibe-kanban]
+    steps:
+      - name: Checkout / Tải mã nguồn
+        uses: actions/checkout@v4
+
+      - name: Extract release notes / Trích ghi chú release từ CHANGELOG
+        run: |
+          set -euo pipefail
+          SECTION="${GITHUB_REF_NAME#v}"
+          awk -v tag="[${SECTION}]" '
+            index($0, "## " tag) == 1 {grab=1; next}
+            grab && /^## \[/ {exit}
+            grab {print}
+          ' CHANGELOG.md | sed '/./,$!d' > release-notes.md
+          if [ ! -s release-notes.md ]; then
+            echo "Release ${GITHUB_REF_NAME}" > release-notes.md
+          fi
+          cat release-notes.md
+
+      - name: Create GitHub Release / Tạo GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          if gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
+            gh release edit "${GITHUB_REF_NAME}" \
+              --title "${GITHUB_REF_NAME}" \
+              --notes-file release-notes.md
+          else
+            gh release create "${GITHUB_REF_NAME}" \
+              --title "${GITHUB_REF_NAME}" \
+              --notes-file release-notes.md
+          fi
