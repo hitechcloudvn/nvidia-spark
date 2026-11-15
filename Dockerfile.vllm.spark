@@ -124,10 +124,18 @@ ARG GIT_REPO_CHECK=0
 RUN --mount=type=bind,source=.git,target=.git \
     if [ "$GIT_REPO_CHECK" != "0" ]; then bash tools/check_repo.sh ; fi
 
-# Max jobs used by Ninja to build extensions
-ARG max_jobs=20
+# EN: Max jobs used by Ninja to build extensions. Defaults to 4 jobs with one
+#     nvcc thread each: GitHub-hosted arm runners have 4 cores / 16 GB RAM and
+#     upstream's `max_jobs=20` OOMs the runner mid-compile (the job dies at
+#     ~1 h with no logs). Override with --build-arg max_jobs=... on bigger
+#     build hosts.
+# VI: Số job tối đa Ninja dùng để build extension. Mặc định 4 job, mỗi nvcc 1
+#     thread: runner arm của GitHub có 4 core / 16 GB RAM, còn `max_jobs=20`
+#     của upstream làm runner hết RAM giữa lúc biên dịch (job chết sau ~1 giờ,
+#     không có log). Ghi đè bằng --build-arg max_jobs=... trên máy build lớn.
+ARG max_jobs=4
 ENV MAX_JOBS=${max_jobs}
-ARG nvcc_threads=2
+ARG nvcc_threads=1
 ENV NVCC_THREADS=$nvcc_threads
 
 ENV CCACHE_DIR=/root/.cache/ccache
