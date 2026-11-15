@@ -96,7 +96,7 @@ jobs:
             ${{ env.IMAGE_PREFIX }}/vibe-kanban:latest
             ${{ env.IMAGE_PREFIX }}/vibe-kanban:${{ github.ref_name }}
 
-  build-llama.cpp:
+  build-llama-cpp:
     name: Build llama.cpp / Build ảnh llama.cpp (non-blocking)
     runs-on: ubuntu-24.04-arm
     needs: [lint]

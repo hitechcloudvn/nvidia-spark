@@ -46,6 +46,9 @@ lint:
 
 release:
   stage: release
+  # release-cli is required by the `release:` keyword; it is not in alpine:3.20
+  # / keyword `release:` cần release-cli; alpine:3.20 không có sẵn
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
   rules:
     - if: $CI_COMMIT_TAG =~ /^v/
   before_script:
