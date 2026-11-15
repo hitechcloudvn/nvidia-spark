@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased] / [Chưa phát hành]
 
+### Fixed / Sửa lỗi
+
+- `docs/RELEASE.md`: the documented `gh api .../visibility` commands cannot work — the GitHub REST API/GraphQL have no package-visibility write endpoint; replaced with the web UI steps and direct settings links. / Các lệnh `gh api .../visibility` trong tài liệu không thể chạy được — REST API/GraphQL của GitHub không có endpoint ghi visibility gói; thay bằng các bước trên giao diện web và link settings trực tiếp.
+
 ## [0.1.0] - 2026-11-16
 
 ### Added / Thêm mới

@@ -35,13 +35,13 @@ GitLab CI (`.gitlab-ci.yml`) mirrors this with a `release:` job on `v*` tags so 
 
 ### After the first publish
 
-Set the GHCR packages to **public** (required once per package; the repository is public but GHCR packages start private):
+GHCR packages start **private** even for a public repository, and neither the REST API nor GraphQL can change visibility — open each package's **Settings → Danger zone → Change visibility → Public** once:
 
-```bash
-gh api -X PUT /orgs/hitechcloudvn/packages/container/nvidia-spark%2Fvibe-kanban/visibility -f visibility=public
-gh api -X PUT /orgs/hitechcloudvn/packages/container/nvidia-spark%2Fllama.cpp/visibility -f visibility=public
-gh api -X PUT /orgs/hitechcloudvn/packages/container/nvidia-spark%2Fvllm/visibility -f visibility=public
-```
+- [`nvidia-spark/vibe-kanban`](https://github.com/orgs/hitechcloudvn/packages/container/package/nvidia-spark%2Fvibe-kanban/settings)
+- [`nvidia-spark/llama.cpp`](https://github.com/orgs/hitechcloudvn/packages/container/package/nvidia-spark%2Fllama.cpp/settings)
+- [`nvidia-spark/vllm`](https://github.com/orgs/hitechcloudvn/packages/container/package/nvidia-spark%2Fvllm/settings)
+
+Until then, `docker pull` requires `docker login ghcr.io`.
 
 ### Hotfix
 
@@ -82,13 +82,13 @@ GitLab CI (`.gitlab-ci.yml`) đối chiếu với job `release:` theo tag `v*` �
 
 ### Sau lần phát hành đầu
 
-Đặt các gói GHCR ở chế độ **public** (cần làm một lần mỗi gói; repo public nhưng gói GHCR mặc định là private):
+Gói GHCR mặc định là **private** dù repo ở chế độ public, và REST API lẫn GraphQL đều không đổi được visibility — hãy mở **Settings → Danger zone → Change visibility → Public** của mỗi gói một lần:
 
-```bash
-gh api -X PUT /orgs/hitechcloudvn/packages/container/nvidia-spark%2Fvibe-kanban/visibility -f visibility=public
-gh api -X PUT /orgs/hitechcloudvn/packages/container/nvidia-spark%2Fllama.cpp/visibility -f visibility=public
-gh api -X PUT /orgs/hitechcloudvn/packages/container/nvidia-spark%2Fvllm/visibility -f visibility=public
-```
+- [`nvidia-spark/vibe-kanban`](https://github.com/orgs/hitechcloudvn/packages/container/package/nvidia-spark%2Fvibe-kanban/settings)
+- [`nvidia-spark/llama.cpp`](https://github.com/orgs/hitechcloudvn/packages/container/package/nvidia-spark%2Fllama.cpp/settings)
+- [`nvidia-spark/vllm`](https://github.com/orgs/hitechcloudvn/packages/container/package/nvidia-spark%2Fvllm/settings)
+
+Nếu chưa đổi, `docker pull` sẽ yêu cầu `docker login ghcr.io`.
 
 ### Hotfix
 
