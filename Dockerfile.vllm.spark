@@ -124,16 +124,19 @@ ARG GIT_REPO_CHECK=0
 RUN --mount=type=bind,source=.git,target=.git \
     if [ "$GIT_REPO_CHECK" != "0" ]; then bash tools/check_repo.sh ; fi
 
-# EN: Max jobs used by Ninja to build extensions. Defaults to 4 jobs with one
-#     nvcc thread each: GitHub-hosted arm runners have 4 cores / 16 GB RAM and
-#     upstream's `max_jobs=20` OOMs the runner mid-compile (the job dies at
-#     ~1 h with no logs). Override with --build-arg max_jobs=... on bigger
-#     build hosts.
-# VI: Số job tối đa Ninja dùng để build extension. Mặc định 4 job, mỗi nvcc 1
-#     thread: runner arm của GitHub có 4 core / 16 GB RAM, còn `max_jobs=20`
-#     của upstream làm runner hết RAM giữa lúc biên dịch (job chết sau ~1 giờ,
-#     không có log). Ghi đè bằng --build-arg max_jobs=... trên máy build lớn.
-ARG max_jobs=4
+# EN: Max jobs used by Ninja to build extensions. Defaults to 2 with one nvcc
+#     thread each: vLLM's 408-target CUDA compile runs `cicc` at 2-4 GB per
+#     job, so even max_jobs=4 exhausts the 16 GB of a GitHub-hosted arm
+#     runner mid-compile — the VM then dies with "the runner has received a
+#     shutdown signal" and the job is killed with no build error. Override
+#     with --build-arg max_jobs=... on bigger build hosts.
+# VI: Số job tối đa Ninja dùng để build extension. Mặc định 2 job, mỗi nvcc
+#     1 thread: build CUDA 408 target của vLLM chạy `cicc` tốn 2-4 GB mỗi
+#     job, nên max_jobs=4 vẫn làm runner arm của GitHub (16 GB RAM) hết RAM
+#     giữa lúc biên dịch — VM chết với thông báo "the runner has received a
+#     shutdown signal", job bị kill mà không có lỗi build. Ghi đè bằng
+#     --build-arg max_jobs=... trên máy build lớn.
+ARG max_jobs=2
 ENV MAX_JOBS=${max_jobs}
 ARG nvcc_threads=1
 ENV NVCC_THREADS=$nvcc_threads

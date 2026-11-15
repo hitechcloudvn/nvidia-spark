@@ -143,22 +143,6 @@ jobs:
     needs: [lint]
     continue-on-error: true
     steps:
-      - name: Free disk space / Giải phóng dung lượng đĩa
-        # EN: The vLLM CUDA build needs tens of GB (devel image + torch cu130 +
-        #     compiled kernels); a stock runner has only ~14 GB free and runs
-        #     out of disk mid-build, which kills the job without logs. Drop
-        #     preinstalled toolchains we do not use and show the free space.
-        # VI: Build vLLM CUDA cần hàng chục GB (ảnh devel + torch cu130 + kernel
-        #     đã biên dịch); runner mặc định chỉ có ~14 GB trống và hết đĩa giữa
-        #     chừng build — job chết mà không có log. Gỡ các toolchain cài sẵn
-        #     không dùng và in dung lượng trống còn lại.
-        run: |
-          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
-            /usr/local/share/powershell /usr/share/swift /usr/local/.ghcup \
-            /opt/hostedtoolcache/CodeQL 2>/dev/null || true
-          docker system prune -af 2>/dev/null || true
-          df -h /
-
       - name: Checkout nvidia-spark / Tải mã nguồn nvidia-spark
         uses: actions/checkout@v4
         with:
