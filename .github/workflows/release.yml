@@ -3,13 +3,14 @@
 #
 # EN: Builds the container images on GitHub-hosted arm64 runners and pushes
 #     them to GHCR, then publishes the GitHub Release from CHANGELOG.md.
-#     The heavy CUDA image builds (llama.cpp, vllm) are non-blocking
-#     (continue-on-error) so a release always publishes even when fragile
-#     upstream GPU builds fail. Upstream pins: LLAMA_CPP_REF / VLLM_REF.
+#     The release job depends on lint only, and the heavy CUDA image builds
+#     (llama.cpp, vllm) are non-blocking (continue-on-error) — image problems
+#     can never delay or block a release. Upstream pins: LLAMA_CPP_REF / VLLM_REF.
 # VI: Build các ảnh container trên runner arm64 của GitHub và đẩy lên GHCR,
-#     rồi tạo GitHub Release từ CHANGELOG.md. Các build CUDA nặng (llama.cpp,
-#     vllm) không chặn (continue-on-error) để release luôn được phát hành ngay
-#     khi build GPU upstream gặp lỗi. Ghim upstream: LLAMA_CPP_REF / VLLM_REF.
+#     rồi tạo GitHub Release từ CHANGELOG.md. Job release chỉ phụ thuộc lint,
+#     các build CUDA nặng (llama.cpp, vllm) không chặn (continue-on-error) —
+#     sự cố ảnh không bao giờ làm chậm hay chặn release.
+#     Ghim upstream: LLAMA_CPP_REF / VLLM_REF.
 #
 # Repo: https://github.com/hitechcloudvn/nvidia-spark
 #       https://gitlab.com/hitechcloudvn/nvidia-spark
@@ -179,7 +180,12 @@ jobs:
   release:
     name: GitHub Release / Phát hành GitHub
     runs-on: ubuntu-24.04
-    needs: [lint, build-vibe-kanban]
+    # EN: Depends on lint only — image builds (can take hours) must never
+    #     delay or block the release; lint success is enough to publish.
+    # VI: Chỉ phụ thuộc lint — build ảnh (có thể kéo dài hàng giờ) không được
+    #     làm chậm hay chặn release; lint pass là đủ để phát hành.
+    needs: [lint]
+    if: ${{ !cancelled() && needs.lint.result == 'success' }}
     steps:
       - name: Checkout / Tải mã nguồn
         uses: actions/checkout@v4

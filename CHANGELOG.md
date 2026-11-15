@@ -30,6 +30,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `install-bun.sh`: symlink to `bun` ran before `~/.bun/bin` was on `PATH`. / Symlink `bun` chạy trước khi thêm `~/.bun/bin` vào `PATH`.
 - Missing `#!/usr/bin/env bash` shebangs and `set -euo pipefail` in several scripts. / Thiếu shebang và `set -euo pipefail` ở nhiều script.
 - `.gitignore` was a Go template → replaced with a shell/Docker-oriented one. / `.gitignore` vốn là template Go → thay bằng bản phù hợp shell/Docker.
+- `Dockerfile.vibe-kanban`: `curl` was used to download the GitHub CLI keyring before it was installed → install `ca-certificates curl` first. / Dùng `curl` tải keyring GitHub CLI trước khi cài `curl` → cài `ca-certificates curl` trước.
+- `Dockerfile.vllm.spark`: `COPY use_existing_torch.py` pointed at a path missing from the vLLM tree → `tools/use_existing_torch.py` (matches upstream v0.33.0). / `COPY use_existing_torch.py` trỏ tới đường dẫn không tồn tại trong mã nguồn vLLM → `tools/use_existing_torch.py` (khớp upstream v0.33.0).
+- GitHub Actions: invalid job id `build-llama.cpp` (dots are not allowed) → `build-llama-cpp`; the GitHub Release now runs as soon as lint passes so image failures can never block it. / Job id `build-llama.cpp` không hợp lệ (không được chứa dấu chấm) → `build-llama-cpp`; GitHub Release chạy ngay khi lint pass để lỗi build ảnh không bao giờ chặn release.
+- GitLab CI: the `release:` job image lacked the `release-cli` binary → `registry.gitlab.com/gitlab-org/release-cli:latest`. / Ảnh của job `release:` thiếu binary `release-cli` → dùng `registry.gitlab.com/gitlab-org/release-cli:latest`.
 
 ### Changed / Thay đổi
 

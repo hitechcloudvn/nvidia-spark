@@ -25,9 +25,9 @@
 On a `v*` tag, GitHub Actions (`release.yml`):
 
 1. **lint** — shellcheck + YAML validation (blocking).
-2. **build-vibe-kanban** — builds and pushes `ghcr.io/hitechcloudvn/nvidia-spark/vibe-kanban` (blocking).
+2. **build-vibe-kanban** — builds and pushes `ghcr.io/hitechcloudvn/nvidia-spark/vibe-kanban`.
 3. **build-llama-cpp / build-vllm** — build the heavy CUDA images on arm64 runners and push to GHCR (non-blocking, `continue-on-error`, pinned via `LLAMA_CPP_REF` / `VLLM_REF`).
-4. **release** — creates the GitHub Release from the `CHANGELOG.md` section for the tag.
+4. **release** — creates the GitHub Release from the `CHANGELOG.md` section for the tag. It runs as soon as **lint** passes — image builds never delay or block a release.
 
 Images receive the tags `vX.Y.Z`, `latest` and the stable alias (`spark` / `spark-full`).
 
@@ -72,9 +72,9 @@ Cherry-pick the fix onto a branch from the release tag, bump PATCH, update the c
 Khi có tag `v*`, GitHub Actions (`release.yml`):
 
 1. **lint** — shellcheck + kiểm tra YAML (chặn nếu lỗi).
-2. **build-vibe-kanban** — build và đẩy `ghcr.io/hitechcloudvn/nvidia-spark/vibe-kanban` (chặn nếu lỗi).
+2. **build-vibe-kanban** — build và đẩy `ghcr.io/hitechcloudvn/nvidia-spark/vibe-kanban`.
 3. **build-llama-cpp / build-vllm** — build các ảnh CUDA nặng trên runner arm64 và đẩy lên GHCR (không chặn, `continue-on-error`, ghim qua `LLAMA_CPP_REF` / `VLLM_REF`).
-4. **release** — tạo GitHub Release từ mục `CHANGELOG.md` tương ứng với tag.
+4. **release** — tạo GitHub Release từ mục `CHANGELOG.md` tương ứng với tag. Release chạy ngay khi **lint** pass — build ảnh không bao giờ làm chậm hay chặn release.
 
 Ảnh nhận các tag `vX.Y.Z`, `latest` và bí danh ổn định (`spark` / `spark-full`).
 
