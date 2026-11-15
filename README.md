@@ -1,95 +1,213 @@
 # AI HomeLab on NVIDIA DGX Spark
 
-This project provides tools and configurations for setting up your own AI HomeLab using NVIDIA DGX Spark technology, featuring Claude Code Router and Vibe Kanban integration for enhanced AI development workflows.
+[English](#english) | [Tiếng Việt](#tiếng-việt)
 
-## Overview
+[![CI](https://github.com/hitechcloudvn/nvidia-spark/actions/workflows/ci.yml/badge.svg)](https://github.com/hitechcloudvn/nvidia-spark/actions/workflows/ci.yml)
+[![Release](https://github.com/hitechcloudvn/nvidia-spark/actions/workflows/release.yml/badge.svg)](https://github.com/hitechcloudvn/nvidia-spark/actions/workflows/release.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-This repository contains scripts and Docker configurations to help you create a powerful AI development environment using NVIDIA's GPU-accelerated computing platform. The setup is designed to leverage the capabilities of NVIDIA's DGX systems for local AI experimentation and development, with integrated Claude Code Router and Vibe Kanban for advanced code-assisted workflows.
+Repositories / Kho lưu trữ:
+**GitHub:** <https://github.com/hitechcloudvn/nvidia-spark> ·
+**GitLab:** <https://gitlab.com/hitechcloudvn/nvidia-spark>
 
-## Features
+---
 
-- Docker-based deployments for consistent environments
-- Support for various AI frameworks and models
-- Pre-configured scripts for common AI tasks
-- Optimized for NVIDIA GPU acceleration
-- Integrated Claude Code Router for AI-powered code assistance
-- Vibe Kanban for AI-enhanced project management
-- Docker Compose setup with health checks
-- Multiple LLM model support via llama.cpp
+## English
 
-## Included Components
+Tools and configurations for running your own AI HomeLab on NVIDIA DGX Spark — local LLM inference with llama.cpp / vLLM / MAX, plus Claude Code Router and Vibe Kanban for AI-assisted development workflows.
 
-- Docker Compose configuration with health checks
-- Llama.cpp integration for efficient inference with CUDA support
-- vLLM (vLLM is fast and easy-to-use library for LLM inference) integration
-- Claude Code Router for AI-powered code assistance
-- Vibe Kanban for AI-enhanced project management
-- Hugging Face model support
-- NVIDIA Docker runtime configuration
-- Support for multiple large language models including Qwen3-Next-80B, MiniMax-M2-139B, and others
+### Features
 
-## Quick Start
+- Docker-based deployments with health checks (Docker Compose)
+- llama.cpp (CUDA 13, sm_121) and vLLM (torch nightly cu130) images built for DGX Spark
+- Hugging Face model catalog (GGUF + safetensors) with one-shot download script
+- Claude Code Router with local + OpenRouter + DeepSeek providers and smart routing
+- Vibe Kanban for orchestrating coding agents (Claude Code, Qwen Code)
+- Bilingual Vietnamese/English docs; CI/CD builds and publishes everything — no local build required
 
-### For Claude Code Router and Vibe Kanban setup:
+### Repository layout
 
-```bash
-# Make sure you have .env file with your API keys (see Environment Variables below)
-./run-claude-code-router.sh
-```
+| Path | Purpose |
+| --- | --- |
+| `docker-compose.yaml` | `max-inference`, `llama.cpp`, `vibe-kanban` services |
+| `Dockerfile.llama.cpp.spark` | llama.cpp CUDA 13 image (targets: base/full/light/server) |
+| `Dockerfile.vllm.spark` | vLLM CUDA 13 image (target: vllm-base) |
+| `Dockerfile.vibe-kanban` | Vibe Kanban + Claude Code Router image |
+| `build-*-docker.sh` | Local image builds (optional — CI builds the same images) |
+| `run-*.sh` | Run inference servers / agent stack |
+| `download-hf-models.sh` | Download the model catalog |
+| `install-*.sh`, `nvidia-docker-runtime.sh`, `docker-bash-completion.sh` | Host setup |
+| `llama.cpp.models.ini` | Model presets for llama.cpp server |
+| `docs/` | Release process, integration notes |
 
-This will:
-- Install Bun (if not already installed)
-- Start the llama.cpp service via Docker Compose
-- Install Claude Code Router, Claude Code, and Vibe Kanban
-- Configure Claude Code Router with local and remote model providers
-- Start the Claude Code Router server
-
-### For standalone Docker Compose setup:
+### Quick start
 
 ```bash
-# Start both llama.cpp and vibe-kanban services
-docker compose up -d
+# 1. Environment / Biến môi trường
+cp .env.example .env          # fill in your keys / điền khoá
 
-# View logs
-docker compose logs -f
+# 2. NVIDIA Docker runtime (once) / một lần
+./nvidia-docker-runtime.sh
+
+# 3. Models (hundreds of GB) / model (hàng trăm GB)
+./install-hf.sh
+./download-hf-models.sh
+
+# 4a. Inference server via Docker Compose / inference server qua Compose
+docker compose up -d llama.cpp
+
+# 4b. Full agent stack / toàn bộ agent stack
+./run-claude-code-router.sh   # router + MCP
+./run-vibe-kanban.sh          # Vibe Kanban UI on :8888
 ```
 
-## Models Supported
+Prebuilt images are pulled from GHCR automatically; to build locally use `./build-llama.cpp-cuda13-docker.sh` / `./build-vllm-cuda13-docker.sh` (arm64 host required).
 
-The system supports various models configured in `llama.cpp.models.ini`:
-- noctrex/MiniMax-M2-139B
-- noctrex/Qwen3-Next-80B (with 1M context support)
-- noctrex/Nemotron-3-Nano-30B
-- unsloth/Devstral-2-139B-Instruct-2512-GGUF
-- endyjasmi/Qwen3-Embedding-8B
+### Images (GHCR)
 
-## Environment Variables
+| Image | Tags |
+| --- | --- |
+| `ghcr.io/hitechcloudvn/nvidia-spark/llama.cpp` | `spark-full`, `latest`, `vX.Y.Z` |
+| `ghcr.io/hitechcloudvn/nvidia-spark/vllm` | `spark`, `latest`, `vX.Y.Z` |
+| `ghcr.io/hitechcloudvn/nvidia-spark/vibe-kanban` | `spark`, `latest`, `vX.Y.Z` |
 
-Create a `.env` file in the project root with the following variables:
+### Models supported
+
+Configured in `llama.cpp.models.ini` / Cấu hình trong `llama.cpp.models.ini`:
+
+- `noctrex/MiniMax-M2-139B` (MiniMax-M2-REAP-139B-A10B-MXFP4)
+- `noctrex/Qwen3-Next-80B` (1M context, YaRN rope-scaling)
+- `noctrex/Nemotron-3-Nano-30B`
+- `unsloth/Devstral-2-123B-Instruct-2512-GGUF`
+- `bartowski/zai-org_GLM-4.7`
+- `endyjasmi/Qwen3-Embedding-8B`
+
+`download-hf-models.sh` additionally fetches coding, VLM, embedding, image/video (ComfyUI), voice and OCR models.
+
+### Environment variables
+
+See `.env.example` / Xem `.env.example`: `HF_TOKEN`, `OPENROUTER_API_KEY`, `DEEPSEEK_API_KEY`, `GITHUB_USER`, `GITHUB_EMAIL`, `AGENT_INFERENCE_SERVER`, `AGENT_MAIN_MODEL`, `AGENT_BACKGROUND_MODEL`, `VIBE_KANBAN_PORT`.
+
+### CI/CD & releases
+
+- `ci.yml` — lint (shellcheck + YAML validation) on every push/PR.
+- `release.yml` — on `v*` tags: builds all three images on arm64 runners, pushes them to GHCR, and publishes the GitHub Release from `CHANGELOG.md`. Fragile upstream GPU builds are non-blocking (`continue-on-error`), so releases always publish.
+- `.gitlab-ci.yml` — lint + GitLab Release on `v*` tags.
+
+Releases follow semver; the process is documented in [`docs/RELEASE.md`](docs/RELEASE.md).
+
+### Requirements
+
+- NVIDIA GPU with CUDA (DGX Spark, sm_121 / GB10 recommended)
+- Docker + Docker Compose, NVIDIA Container Toolkit
+- Bun runtime (installed by `install-bun.sh`)
+- ~128 GB RAM recommended for the large MoE models; hundreds of GB of disk for the model catalog
+
+### License
+
+MIT — see [LICENSE](LICENSE). Dual copyright: original portions by [Slach/nvidia-spark](https://github.com/Slach/nvidia-spark), modifications and maintenance by Nguyễn Thanh An (thanhan92f1) — HiTechCloud (`hitechcloudvn`).
+
+### Acknowledgements
+
+Based on [Slach/nvidia-spark](https://github.com/Slach/nvidia-spark). Thanks to the upstream projects: [llama.cpp](https://github.com/ggml-org/llama.cpp), [vLLM](https://github.com/vllm-project/vllm), [Claude Code Router](https://github.com/musistudio/claude-code-router), [Vibe Kanban](https://vibekanban.com).
+
+---
+
+## Tiếng Việt
+
+Công cụ và cấu hình để vận hành AI HomeLab của riêng bạn trên NVIDIA DGX Spark — suy luận LLM cục bộ với llama.cpp / vLLM / MAX, kèm Claude Code Router và Vibe Kanban cho quy trình phát triển có AI hỗ trợ.
+
+### Tính năng
+
+- Triển khai dựa trên Docker kèm health check (Docker Compose)
+- Ảnh llama.cpp (CUDA 13, sm_121) và vLLM (torch nightly cu130) build riêng cho DGX Spark
+- Danh mục model Hugging Face (GGUF + safetensors) với script tải một chạm
+- Claude Code Router với provider cục bộ + OpenRouter + DeepSeek và định tuyến thông minh
+- Vibe Kanban để điều phối coding agent (Claude Code, Qwen Code)
+- Tài liệu song ngữ Việt/Anh; CI/CD build và phát hành toàn bộ — không cần build cục bộ
+
+### Bố cục repository
+
+| Đường dẫn | Mục đích |
+| --- | --- |
+| `docker-compose.yaml` | Dịch vụ `max-inference`, `llama.cpp`, `vibe-kanban` |
+| `Dockerfile.llama.cpp.spark` | Ảnh llama.cpp CUDA 13 (target: base/full/light/server) |
+| `Dockerfile.vllm.spark` | Ảnh vLLM CUDA 13 (target: vllm-base) |
+| `Dockerfile.vibe-kanban` | Ảnh Vibe Kanban + Claude Code Router |
+| `build-*-docker.sh` | Build ảnh cục bộ (tuỳ chọn — CI build cùng ảnh) |
+| `run-*.sh` | Chạy inference server / agent stack |
+| `download-hf-models.sh` | Tải danh mục model |
+| `install-*.sh`, `nvidia-docker-runtime.sh`, `docker-bash-completion.sh` | Thiết lập host |
+| `llama.cpp.models.ini` | Preset model cho llama.cpp server |
+| `docs/` | Quy trình phát hành, ghi chú tích hợp |
+
+### Bắt đầu nhanh
 
 ```bash
-OPENROUTER_API_KEY=your_openrouter_api_key
-DEEPSEEK_API_KEY=your_deepseek_api_key
-GITHUB_USER=your_github_username
-GITHUB_EMAIL=your_github_email
+# 1. Biến môi trường
+cp .env.example .env          # điền khoá
+
+# 2. NVIDIA Docker runtime (một lần)
+./nvidia-docker-runtime.sh
+
+# 3. Model (hàng trăm GB)
+./install-hf.sh
+./download-hf-models.sh
+
+# 4a. Inference server qua Compose
+docker compose up -d llama.cpp
+
+# 4b. Toàn bộ agent stack
+./run-claude-code-router.sh   # router + MCP
+./run-vibe-kanban.sh          # giao diện Vibe Kanban ở cổng 8888
 ```
 
-## Claude Code Router Configuration
+Ảnh dựng sẵn tự động kéo từ GHCR; nếu muốn build cục bộ dùng `./build-llama.cpp-cuda13-docker.sh` / `./build-vllm-cuda13-docker.sh` (cần máy arm64).
 
-The Claude Code Router is configured with:
-- Local llama.cpp models as primary provider
-- OpenRouter and DeepSeek as fallback providers
-- Smart routing based on task complexity and context length
-- Support for multiple AI models including Claude, Gemini, Grok, and others
+### Ảnh (GHCR)
 
-## Requirements
+| Ảnh | Tag |
+| --- | --- |
+| `ghcr.io/hitechcloudvn/nvidia-spark/llama.cpp` | `spark-full`, `latest`, `vX.Y.Z` |
+| `ghcr.io/hitechcloudvn/nvidia-spark/vllm` | `spark`, `latest`, `vX.Y.Z` |
+| `ghcr.io/hitechcloudvn/nvidia-spark/vibe-kanban` | `spark`, `latest`, `vX.Y.Z` |
 
-- NVIDIA-compatible GPU with CUDA support
-- Docker and Docker Compose
-- NVIDIA Container Toolkit
-- Bun JavaScript runtime
-- At least 128GB RAM recommended for large models (e.g., 139B parameter models)
+### Model hỗ trợ
 
-## License
+Cấu hình trong `llama.cpp.models.ini`:
 
-MIT License - See LICENSE file for details.
+- `noctrex/MiniMax-M2-139B` (MiniMax-M2-REAP-139B-A10B-MXFP4)
+- `noctrex/Qwen3-Next-80B` (ngữ cảnh 1M, YaRN rope-scaling)
+- `noctrex/Nemotron-3-Nano-30B`
+- `unsloth/Devstral-2-123B-Instruct-2512-GGUF`
+- `bartowski/zai-org_GLM-4.7`
+- `endyjasmi/Qwen3-Embedding-8B`
+
+`download-hf-models.sh` tải thêm model lập trình, VLM, embedding, ảnh/video (ComfyUI), giọng nói và OCR.
+
+### Biến môi trường
+
+Xem `.env.example`: `HF_TOKEN`, `OPENROUTER_API_KEY`, `DEEPSEEK_API_KEY`, `GITHUB_USER`, `GITHUB_EMAIL`, `AGENT_INFERENCE_SERVER`, `AGENT_MAIN_MODEL`, `AGENT_BACKGROUND_MODEL`, `VIBE_KANBAN_PORT`.
+
+### CI/CD & phát hành
+
+- `ci.yml` — lint (shellcheck + kiểm tra YAML) trên mọi push/PR.
+- `release.yml` — khi có tag `v*`: build cả ba ảnh trên runner arm64, đẩy lên GHCR, tạo GitHub Release từ `CHANGELOG.md`. Các bước build GPU upstream dễ hỏng được đặt không chặn (`continue-on-error`) để release luôn được phát hành.
+- `.gitlab-ci.yml` — lint + GitLab Release theo tag `v*`.
+
+Release theo semver; quy trình tại [`docs/RELEASE.md`](docs/RELEASE.md).
+
+### Yêu cầu
+
+- GPU NVIDIA có CUDA (khuyến nghị DGX Spark, sm_121 / GB10)
+- Docker + Docker Compose, NVIDIA Container Toolkit
+- Bun runtime (cài qua `install-bun.sh`)
+- Khuyến nghị ~128 GB RAM cho các model MoE lớn; hàng trăm GB ổ đĩa cho danh mục model
+
+### Giấy phép
+
+MIT — xem [LICENSE](LICENSE). Bản quyền kép: phần gốc bởi [Slach/nvidia-spark](https://github.com/Slach/nvidia-spark), sửa đổi và bảo trì bởi Nguyễn Thanh An (thanhan92f1) — HiTechCloud (`hitechcloudvn`).
+
+### Ghi nhận
+
+Dựa trên [Slach/nvidia-spark](https://github.com/Slach/nvidia-spark). Cảm ơn các dự án upstream: [llama.cpp](https://github.com/ggml-org/llama.cpp), [vLLM](https://github.com/vllm-project/vllm), [Claude Code Router](https://github.com/musistudio/claude-code-router), [Vibe Kanban](https://vibekanban.com).

@@ -1,0 +1,41 @@
+# Changelog / Nhật ký thay đổi
+
+All notable changes to this project will be documented in this file.
+Tất cả thay đổi đáng chú ý của dự án sẽ được ghi lại tại đây.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased] / [Chưa phát hành]
+
+## [0.1.0] - 2026-11-16
+
+### Added / Thêm mới
+
+- Docker Compose stack for NVIDIA DGX Spark: `max-inference`, `llama.cpp`, `vibe-kanban` with health checks. / Chuỗi dịch vụ Docker Compose cho NVIDIA DGX Spark: `max-inference`, `llama.cpp`, `vibe-kanban` kèm health check.
+- Dockerfiles: `Dockerfile.llama.cpp.spark` (multi-target base/full/light/server), `Dockerfile.vllm.spark` (torch nightly cu130, target `vllm-base`), `Dockerfile.vibe-kanban` (Claude Code Router + Vibe Kanban). / Các Dockerfile: llama.cpp đa target, vLLM với torch nightly cu130, Vibe Kanban kèm Claude Code Router.
+- Helper scripts: build (`build-llama.cpp-cuda13-docker.sh`, `build-vllm-cuda13-docker.sh`, `build-vllm-cuda13.sh`), run (`run-llama.cpp-docker.sh`, `run-vllm-docker.sh`, `run-huggingface-tgi-docker.sh`, `run-claude-code-router.sh`, `run-vibe-kanban.sh`, `docker/run-vibe-kanban.sh`), install (`install-bun.sh`, `install-hf.sh`, `nvidia-docker-runtime.sh`, `docker-bash-completion.sh`), models (`download-hf-models.sh`, `llama.cpp.models.ini`). / Các script tiện ích: build, chạy, cài đặt, model.
+- Bilingual Vietnamese/English documentation across the whole repository. / Tài liệu song ngữ Việt/Anh trên toàn bộ repository.
+- CI/CD: GitHub Actions lint on push/PR; tag-driven release workflow building GHCR images (`ghcr.io/hitechcloudvn/nvidia-spark/*`) and creating the GitHub Release from this changelog. GitLab CI lint + `release:` job on `v*` tags. / CI/CD: GitHub Actions lint, workflow phát hành theo tag build ảnh GHCR và tạo GitHub Release từ changelog này; GitLab CI lint + job `release:` theo tag `v*`.
+- `LICENSE` (MIT), `CONTRIBUTING.md`, `.env.example`, `docs/RELEASE.md`. / Các file giấy phép, hướng dẫn đóng góp, mẫu env, quy trình phát hành.
+
+### Fixed / Sửa lỗi
+
+- `docker/run-vibe-kanban.sh`: hardcoded `Slach` path for `.env`; stray `}` in `Router.background`; trailing commas producing invalid JSON in `profiles.json` and the openrouter model list. / Đường dẫn `.env` gắn cứng `Slach`; thừa `}` ở `Router.background`; dấu phẩy thừa làm JSON không hợp lệ.
+- `run-claude-code-router.sh`: same stray `}` and trailing comma; unguarded `source .env`; `docker compose up -d` without a default service. / Lỗi tương tự; `source .env` không kiểm tra; `docker compose up -d` không có service mặc định.
+- `Dockerfile.vibe-kanban`: missing `@qwen-code/qwen-code` made `qwen mcp` build steps fail. / Thiếu `@qwen-code/qwen-code` khiến bước `qwen mcp` lỗi khi build.
+- `Dockerfile.vllm.spark`: invalid `ARG PYTHON_VERSION=13.2` → `3.12`. / Giá trị `PYTHON_VERSION` không hợp lệ.
+- `docker-compose.yaml`: broken `llama.cpp` build context → prebuilt GHCR image; missing `OPENROUTER_API_KEY`/`DEEPSEEK_API_KEY`/`GITHUB_USER`/`GITHUB_EMAIL` for `vibe-kanban`. / Ngữ cảnh build `llama.cpp` sai → dùng ảnh GHCR; thiếu biến môi trường cho `vibe-kanban`.
+- Build scripts: SSH clone URLs → HTTPS, idempotent clones, `VLLM_REF` checked out consistently. / URL clone SSH → HTTPS, clone chạy lặp được, checkout `VLLM_REF` nhất quán.
+- `install-bun.sh`: symlink to `bun` ran before `~/.bun/bin` was on `PATH`. / Symlink `bun` chạy trước khi thêm `~/.bun/bin` vào `PATH`.
+- Missing `#!/usr/bin/env bash` shebangs and `set -euo pipefail` in several scripts. / Thiếu shebang và `set -euo pipefail` ở nhiều script.
+- `.gitignore` was a Go template → replaced with a shell/Docker-oriented one. / `.gitignore` vốn là template Go → thay bằng bản phù hợp shell/Docker.
+
+### Changed / Thay đổi
+
+- Organization references standardized to `hitechcloudvn` on GitHub and GitLab (replacing old upstream paths). / Chuẩn hoá tham chiếu tổ chức thành `hitechcloudvn` trên GitHub và GitLab.
+- Container images published under `ghcr.io/hitechcloudvn/nvidia-spark/{llama.cpp,vllm,vibe-kanban}`. / Ảnh container phát hành tại `ghcr.io/hitechcloudvn/nvidia-spark/*`.
+- Author and Committer of the whole history standardized to `Nguyễn Thanh An <thanhan92f1@gmail.com>`. / Tác giả và người commit của toàn bộ lịch sử được chuẩn hoá về `Nguyễn Thanh An <thanhan92f1@gmail.com>`.
+
+[Unreleased]: https://github.com/hitechcloudvn/nvidia-spark/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/hitechcloudvn/nvidia-spark/releases/tag/v0.1.0
