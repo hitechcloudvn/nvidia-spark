@@ -1,13 +1,38 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# =============================================================================
+# docker/run-vibe-kanban.sh — Entry point container Vibe Kanban
+#                             Vibe Kanban container entrypoint
+#
+# EN: Runs inside the vibe-kanban container (copied to /startup.sh). Waits for
+#     the selected inference service, writes Claude Code Router + Vibe Kanban
+#     configs, then starts the router and Vibe Kanban in screen sessions.
+# VI: Chạy bên trong container vibe-kanban (được copy thành /startup.sh). Chờ
+#     inference service đã chọn, ghi cấu hình Claude Code Router + Vibe Kanban,
+#     rồi khởi động router và Vibe Kanban trong các screen session.
+#
+# Note / Lưu ý:
+#   EN: Secrets come from the compose `environment` block; a .env file under
+#       NVIDIA_SPARK_HOME (or /root/.env) is loaded as a fallback.
+#   VI: Bí mật lấy từ khối `environment` của compose; file .env trong
+#       NVIDIA_SPARK_HOME (hoặc /root/.env) được nạp như phương án dự phòng.
+#
+# Repo: https://github.com/hitechcloudvn/nvidia-spark
+#       https://gitlab.com/hitechcloudvn/nvidia-spark
+# =============================================================================
+set -euo pipefail
 
-set -e
-
-# Source environment variables if available
-if [ -f /root/src/github.com/Slach/nvidia-spark/.env ]; then
-  source /root/src/github.com/Slach/nvidia-spark/.env
+# Source environment variables if available / Nạp biến môi trường nếu có
+NVIDIA_SPARK_HOME="${NVIDIA_SPARK_HOME:-/root/src/github.com/hitechcloudvn/nvidia-spark}"
+if [ -f "${NVIDIA_SPARK_HOME}/.env" ]; then
+  # shellcheck disable=SC1091
+  source "${NVIDIA_SPARK_HOME}/.env"
+elif [ -f /root/.env ]; then
+  # shellcheck disable=SC1091
+  source /root/.env
 fi
 
 # Wait for the selected inference service to be available
+# Chờ inference service đã chọn sẵn sàng
 SERVICE_HOST="${AGENT_INFERENCE_SERVER:-max-inference}"
 SERVICE_PORT="8100"
 
@@ -21,7 +46,7 @@ while ! nc -z "$SERVICE_HOST" "$SERVICE_PORT"; do
 done
 echo "$SERVICE_HOST service is available"
 
-# Create Claude Code Router config
+# Create Claude Code Router config / Tạo cấu hình Claude Code Router
 cat <<EOT > /root/.claude-code-router/config.json
 {
   "LOG": false,
@@ -43,7 +68,7 @@ cat <<EOT > /root/.claude-code-router/config.json
     {
       "name": "openrouter",
       "api_base_url": "https://openrouter.ai/api/v1/chat/completions",
-      "api_key": "${OPENROUTER_API_KEY}",
+      "api_key": "${OPENROUTER_API_KEY:-}",
       "models": [
         "google/gemini-3-pro-preview",
         "anthropic/claude-sonnet-4.5",
@@ -52,7 +77,7 @@ cat <<EOT > /root/.claude-code-router/config.json
         "qwen/qwen3-coder:exacto",
         "moonshotai/kimi-k2-0905:exacto",
         "deepseek/deepseek-v3.2-speciale",
-        "perplexity/sonar",
+        "perplexity/sonar"
       ],
       "transformer": {
         "use": ["openrouter"]
@@ -61,7 +86,7 @@ cat <<EOT > /root/.claude-code-router/config.json
     {
       "name": "deepseek",
       "api_base_url": "https://api.deepseek.com/chat/completions",
-      "api_key": "${DEEPSEEK_API_KEY}",
+      "api_key": "${DEEPSEEK_API_KEY:-}",
       "models": ["deepseek-chat", "deepseek-reasoner"],
       "transformer": {
         "use": ["deepseek"],
@@ -73,15 +98,16 @@ cat <<EOT > /root/.claude-code-router/config.json
   ],
   "Router": {
     "default": "${AGENT_INFERENCE_SERVER:-max-inference},${AGENT_MAIN_MODEL:-noctrex/MiniMax-M2-REAP-139B-A10B-MXFP4_MOE-GGUF}",
-    "background": "${AGENT_INFERENCE_SERVER:-max-inference},${AGENT_BACKGROUND_MODEL:-noctrex/MiniMax-M2-REAP-139B-A10B-MXFP4_MOE-GGUF}}",
+    "background": "${AGENT_INFERENCE_SERVER:-max-inference},${AGENT_BACKGROUND_MODEL:-noctrex/MiniMax-M2-REAP-139B-A10B-MXFP4_MOE-GGUF}",
     "think": "openrouter,x-ai/grok-4.1-fast",
     "longContext": "openrouter,x-ai/grok-4.1-fast",
     "longContextThreshold": 98304,
     "webSearch": "openrouter,perplexity/sonar"
   }
+}
 EOT
 
-# Create Vibe Kanban config
+# Create Vibe Kanban config / Tạo cấu hình Vibe Kanban
 cat <<EOT > /root/.local/share/vibe-kanban/profiles.json
 {
   "executors": {
@@ -107,7 +133,7 @@ cat <<EOT > /root/.local/share/vibe-kanban/profiles.json
           "disable_api_key": true,
           "base_command_override": "bunx --bun @musistudio/claude-code-router@latest code"
         }
-      },
+      }
     },
     "QWEN_CODE": {
       "DEFAULT": {
@@ -164,7 +190,7 @@ cat <<EOT > /root/.local/share/vibe-kanban/config.json
 }
 EOT
 
-# Kill existing screens if they exist
+# Kill existing screens if they exist / Dọn screen cũ nếu có
 if screen -list | grep -q "ccr-server"; then
   ccr stop 2>/dev/null || true
   sleep 2
@@ -175,14 +201,14 @@ if screen -list | grep -q "vibe-kanban"; then
   screen -S vibe-kanban -X quit 2>/dev/null || true
 fi
 
-# Start Claude Code Router in screen
+# Start Claude Code Router in screen / Khởi động Claude Code Router trong screen
 screen -L -Logfile /tmp/ccr-server.log -dmS ccr-server ccr start
 
-# Start Vibe Kanban in screen on port 8888
-screen -L -Logfile /tmp/vibe-kanban.log -dmS vibe-kanban bash -c "PORT=8888 bunx vibe-kanban@latest"
+# Start Vibe Kanban in screen on port 8888 / Chạy Vibe Kanban trong screen ở cổng 8888
+screen -L -Logfile /tmp/vibe-kanban.log -dmS vibe-kanban bash -c "PORT=${VIBE_KANBAN_PORT:-8888} bunx vibe-kanban@latest"
 
-# Show active screens
+# Show active screens / Liệt kê screen đang chạy
 screen -list
 
-# Keep container running and monitor logs
+# Keep container running and monitor logs / Giữ container chạy và theo dõi log
 tail -f /tmp/ccr-server.log /tmp/vibe-kanban.log

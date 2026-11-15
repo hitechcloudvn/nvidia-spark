@@ -1,7 +1,36 @@
+# =============================================================================
+# Dockerfile.vibe-kanban — Ảnh Vibe Kanban + Claude Code Router cho DGX Spark
+#                           Vibe Kanban + Claude Code Router image for DGX Spark
+#
+# EN: bun-based image with screen, git, gh, netcat and the bun tooling
+#     (claude-code, qwen-code, claude-code-router, vibe-kanban). Entrypoint is
+#     docker/run-vibe-kanban.sh, which waits for the inference service and
+#     starts the router + Vibe Kanban in screen sessions.
+# VI: Ảnh dựa trên bun kèm screen, git, gh, netcat và công cụ bun
+#     (claude-code, qwen-code, claude-code-router, vibe-kanban). Entrypoint là
+#     docker/run-vibe-kanban.sh — chờ inference service rồi khởi động router +
+#     Vibe Kanban trong các screen session.
+#
+# Usage / Cách dùng:
+#   docker build -f Dockerfile.vibe-kanban -t ghcr.io/hitechcloudvn/nvidia-spark/vibe-kanban:spark .
+#
+# Repo: https://github.com/hitechcloudvn/nvidia-spark
+#       https://gitlab.com/hitechcloudvn/nvidia-spark
+# =============================================================================
 FROM docker.io/oven/bun:latest
 
-# Install system dependencies
-# @todo think about how to pass credentials, currently need local run `gh auth login --web --git-protocol` and $HOME:/root/:ro mounts
+# OCI metadata — keep in sync across all images in this repo
+# Siêu dữ liệu OCI — đồng bộ trên mọi ảnh trong repo này
+LABEL org.opencontainers.image.title="vibe-kanban (spark)" \
+      org.opencontainers.image.description="Vibe Kanban + Claude Code Router image for NVIDIA DGX Spark" \
+      org.opencontainers.image.source="https://github.com/hitechcloudvn/nvidia-spark" \
+      org.opencontainers.image.url="https://github.com/hitechcloudvn/nvidia-spark" \
+      org.opencontainers.image.licenses="MIT" \
+      org.opencontainers.image.vendor="HiTechCloud (hitechcloudvn)"
+
+# Install system dependencies / Cài phụ thuộc hệ thống
+# EN: Credentials still need `gh auth login --web` + $HOME:/root/:ro mounts (todo).
+# VI: Thông tin xác thực vẫn cần `gh auth login --web` + mount $HOME:/root/:ro (todo).
 RUN mkdir -p -m 755 /etc/apt/keyrings && \
     curl -o /etc/apt/keyrings/githubcli-archive-keyring.gpg -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg && \
     chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg && \
@@ -14,15 +43,17 @@ RUN mkdir -p -m 755 /etc/apt/keyrings && \
     netcat-openbsd \
     && rm -rf /var/lib/apt/lists/*
 
-# Create necessary directories
+# Create necessary directories / Tạo các thư mục cần thiết
 RUN mkdir -p /root/.claude-code-router \
     /root/.local/share/vibe-kanban \
     && mkdir -p /app
 
 WORKDIR /app
 
-# Install bun packages globally
-RUN bun install -g @anthropic-ai/claude-code @musistudio/claude-code-router vibe-kanban@latest
+# Install bun packages globally / Cài các gói bun toàn cục
+# EN: @qwen-code/qwen-code is required — the `qwen mcp` steps below fail without it.
+# VI: @qwen-code/qwen-code là bắt buộc — các bước `qwen mcp` bên dưới sẽ lỗi nếu thiếu.
+RUN bun install -g @anthropic-ai/claude-code @qwen-code/qwen-code @musistudio/claude-code-router vibe-kanban@latest
 
 RUN claude mcp add --scope user --transport http gitmcp  https://gitmcp.io/docs/
 RUN claude mcp add --scope user vibe_kanban -e PORT="${VIBE_KANBAN_PORT:-8888}"  -- bunx --bun vibe-kanban@latest --mcp
@@ -32,7 +63,7 @@ RUN qwen mcp add --scope user --transport http gitmcp https://gitmcp.io/docs/
 RUN qwen mcp add --scope user vibe_kanban bunx --bun vibe-kanban@latest --mcp -e PORT="${VIBE_KANBAN_PORT:-8888}"
 RUN qwen mcp list
 
-# Copy startup script
+# Copy startup script / Copy script khởi động
 COPY docker/run-vibe-kanban.sh /startup.sh
 RUN chmod +x /startup.sh
 

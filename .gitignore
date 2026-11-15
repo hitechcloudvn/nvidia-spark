@@ -1,35 +1,38 @@
-# If you prefer the allow list template instead of the deny list, see community template:
-# https://github.com/github/gitignore/blob/main/community/Golang/Go.AllowList.gitignore
+# =============================================================================
+# .gitignore — Bỏ qua file không cần theo dõi / Ignore files not to be tracked
 #
-# Binaries for programs and plugins
-*.exe
-*.exe~
-*.dll
-*.so
-*.dylib
+# EN: Tuned for this shell/Docker toolkit repo (not a Go project).
+# VI: Chỉnh cho repo công cụ shell/Docker này (không phải dự án Go).
+#
+# Repo: https://github.com/hitechcloudvn/nvidia-spark
+#       https://gitlab.com/hitechcloudvn/nvidia-spark
+# =============================================================================
 
-# Test binary, built with `go test -c`
-*.test
-
-# Code coverage profiles and other test artifacts
-*.out
-coverage.*
-*.coverprofile
-profile.cov
-
-# Dependency directories (remove the comment below to include it)
-# vendor/
-
-# Go workspace file
-go.work
-go.work.sum
-
-# env file
+# env file with secrets / file .env chứa bí mật
 .env
 
-# Editor/IDE
+# logs / file log
+*.log
+logs/
+
+# OS junk / file rác của hệ điều hành
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor/IDE / trình soạn thảo
 .idea/
 .vscode/
+*.swp
+*.swo
+*~
 
-# agents
+# agents / trợ lý AI
 .aider*
+
+# local build artifacts / sản phẩm build cục bộ
+dist/
+build/
+*.tar
+*.tar.gz
+*.tgz

@@ -1,3 +1,17 @@
+# =============================================================================
+# Dockerfile.llama.cpp.spark — Ảnh llama.cpp CUDA 13 cho NVIDIA DGX Spark
+#                               llama.cpp CUDA 13 image for NVIDIA DGX Spark
+#
+# EN: Adapted from llama.cpp .devops/cuda.Dockerfile. Build with the llama.cpp
+#     source tree as context and --target full — see
+#     build-llama.cpp-cuda13-docker.sh (targets: base/full/light/server).
+# VI: Chuyển thể từ .devops/cuda.Dockerfile của llama.cpp. Build với mã nguồn
+#     llama.cpp làm context và --target full — xem
+#     build-llama.cpp-cuda13-docker.sh (các target: base/full/light/server).
+#
+# Repo: https://github.com/hitechcloudvn/nvidia-spark
+#       https://gitlab.com/hitechcloudvn/nvidia-spark
+# =============================================================================
 ARG UBUNTU_VERSION=24.04
 # This needs to generally match the container host's environment.
 ARG CUDA_VERSION=13.0.2
@@ -37,6 +51,15 @@ RUN mkdir -p /app/full \
 
 ## Base image
 FROM ${BASE_CUDA_RUN_CONTAINER} AS base
+
+# OCI metadata — inherited by the full/light/server targets below
+# Siêu dữ liệu OCI — kế thừa bởi các target full/light/server bên dưới
+LABEL org.opencontainers.image.title="llama.cpp (spark)" \
+      org.opencontainers.image.description="llama.cpp CUDA 13 image for NVIDIA DGX Spark (sm_121)" \
+      org.opencontainers.image.source="https://github.com/hitechcloudvn/nvidia-spark" \
+      org.opencontainers.image.url="https://github.com/hitechcloudvn/nvidia-spark" \
+      org.opencontainers.image.licenses="MIT" \
+      org.opencontainers.image.vendor="HiTechCloud (hitechcloudvn)"
 
 ENV LD_LIBRARY_PATH=/usr/local/cuda-13/compat
 

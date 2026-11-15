@@ -1,7 +1,20 @@
-# The vLLM Dockerfile is used to construct vLLM image against torch nightly that can be directly used for testing
+# =============================================================================
+# Dockerfile.vllm.spark — Ảnh vLLM CUDA 13 cho NVIDIA DGX Spark (sm_121)
+#                          vLLM CUDA 13 image for NVIDIA DGX Spark (sm_121)
+#
+# EN: Adapted from the vLLM Dockerfile to build vLLM against torch nightly
+#     (cu130) for CUDA 13 / GB10 (DGX Spark). Build with the vLLM source tree
+#     as context and --target vllm-base — see build-vllm-cuda13-docker.sh.
+# VI: Chuyển thể từ Dockerfile của vLLM để build vLLM với torch nightly
+#     (cu130) cho CUDA 13 / GB10 (DGX Spark). Build với mã nguồn vLLM làm
+#     context và --target vllm-base — xem build-vllm-cuda13-docker.sh.
+#
+# Repo: https://github.com/hitechcloudvn/nvidia-spark
+#       https://gitlab.com/hitechcloudvn/nvidia-spark
+# =============================================================================
 
 ARG CUDA_VERSION=13.0.2
-ARG PYTHON_VERSION=13.2
+ARG PYTHON_VERSION=3.12
 ARG UBUNTU_VERSION=24.04
 ARG NUMBA_VERSION=0.61.2
 ARG TORCH_CUDA_ARCH_LIST='12.1'
@@ -124,6 +137,15 @@ ARG PYTORCH_URL
 
 WORKDIR /vllm-workspace
 ENV DEBIAN_FRONTEND=noninteractive
+
+# OCI metadata — keep in sync across all images in this repo
+# Siêu dữ liệu OCI — đồng bộ trên mọi ảnh trong repo này
+LABEL org.opencontainers.image.title="vLLM (spark)" \
+      org.opencontainers.image.description="vLLM CUDA 13 image for NVIDIA DGX Spark (sm_121)" \
+      org.opencontainers.image.source="https://github.com/hitechcloudvn/nvidia-spark" \
+      org.opencontainers.image.url="https://github.com/hitechcloudvn/nvidia-spark" \
+      org.opencontainers.image.licenses="MIT" \
+      org.opencontainers.image.vendor="HiTechCloud (hitechcloudvn)"
 
 RUN PYTHON_VERSION_STR=$(echo ${PYTHON_VERSION} | sed 's/\.//g') && \
     echo "export PYTHON_VERSION_STR=${PYTHON_VERSION_STR}" >> /etc/environment

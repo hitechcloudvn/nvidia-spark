@@ -1,3 +1,23 @@
+# =============================================================================
+# docker-compose.yaml — Dịch vụ AI HomeLab cho NVIDIA DGX Spark
+#                       AI HomeLab services for NVIDIA DGX Spark
+#
+# EN: Inference servers (max-inference / llama.cpp) plus the Vibe Kanban
+#     agent-orchestration UI. Images come from GHCR
+#     (ghcr.io/hitechcloudvn/nvidia-spark/*); llama.cpp is prebuilt — build it
+#     with ./build-llama.cpp-cuda13-docker.sh only if you want a local image.
+# VI: Các inference server (max-inference / llama.cpp) cùng giao diện điều phối
+#     agent Vibe Kanban. Ảnh lấy từ GHCR (ghcr.io/hitechcloudvn/nvidia-spark/*);
+#     llama.cpp dùng ảnh dựng sẵn — chỉ build cục bộ bằng
+#     ./build-llama.cpp-cuda13-docker.sh nếu muốn.
+#
+# Usage / Cách dùng:
+#   cp .env.example .env   # then edit / rồi điền khoá
+#   docker compose up -d llama.cpp
+#
+# Repo: https://github.com/hitechcloudvn/nvidia-spark
+#       https://gitlab.com/hitechcloudvn/nvidia-spark
+# =============================================================================
 services:
   max-inference:
     image: modular/max-nvidia-full:latest
@@ -31,10 +51,11 @@ services:
       start_period: 10s
 
   llama.cpp:
-    build:
-      context: .
-      dockerfile: Dockerfile.llama.cpp.spark
-    image: "llama.cpp:spark-full"
+    # Prebuilt image — no local build context needed (the Dockerfile requires
+    # the llama.cpp source tree; see build-llama.cpp-cuda13-docker.sh).
+    # Ảnh dựng sẵn — không cần build context cục bộ (Dockerfile cần mã nguồn
+    # llama.cpp; xem build-llama.cpp-cuda13-docker.sh).
+    image: ghcr.io/hitechcloudvn/nvidia-spark/llama.cpp:spark-full
     volumes:
       - ${HOME}/.cache/huggingface:/models/huggingface:ro
       - ./llama.cpp.models.ini:/etc/llama.cpp/config.ini
@@ -70,7 +91,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.vibe-kanban
-    image: vibe-kanban:spark
+    image: ghcr.io/hitechcloudvn/nvidia-spark/vibe-kanban:spark
     volumes:
       - ${HOME}:/root/
       - /tmp:/tmp
@@ -80,9 +101,14 @@ services:
       - spark-network
     environment:
       - HOME=/root
+      - NVIDIA_SPARK_HOME=/root/src/github.com/hitechcloudvn/nvidia-spark
       - AGENT_INFERENCE_SERVER=${AGENT_INFERENCE_SERVER:-max-inference}
       - AGENT_MAIN_MODEL=${AGENT_MAIN_MODEL:-noctrex/MiniMax-M2-REAP-139B-A10B-MXFP4_MOE-GGUF}
       - AGENT_BACKGROUND_MODEL=${AGENT_BACKGROUND_MODEL:-noctrex/MiniMax-M2-REAP-139B-A10B-MXFP4_MOE-GGUF}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
+      - GITHUB_USER=${GITHUB_USER:-}
+      - GITHUB_EMAIL=${GITHUB_EMAIL:-}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8888/health"]
       interval: 60s
@@ -93,4 +119,3 @@ services:
 networks:
   spark-network:
     driver: bridge
-    
