@@ -8,10 +8,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased] / [Chưa phát hành]
 
-### Fixed / Sửa lỗi
-
-- `docs/RELEASE.md`: the documented `gh api .../visibility` commands cannot work — the GitHub REST API/GraphQL have no package-visibility write endpoint; replaced with the web UI steps and direct settings links. / Các lệnh `gh api .../visibility` trong tài liệu không thể chạy được — REST API/GraphQL của GitHub không có endpoint ghi visibility gói; thay bằng các bước trên giao diện web và link settings trực tiếp.
-
 ## [0.1.0] - 2026-11-16
 
 ### Added / Thêm mới
@@ -38,6 +34,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Dockerfile.vllm.spark`: `COPY use_existing_torch.py` pointed at a path missing from the vLLM tree → `tools/use_existing_torch.py` (matches upstream v0.33.0). / `COPY use_existing_torch.py` trỏ tới đường dẫn không tồn tại trong mã nguồn vLLM → `tools/use_existing_torch.py` (khớp upstream v0.33.0).
 - GitHub Actions: invalid job id `build-llama.cpp` (dots are not allowed) → `build-llama-cpp`; the GitHub Release now runs as soon as lint passes so image failures can never block it. / Job id `build-llama.cpp` không hợp lệ (không được chứa dấu chấm) → `build-llama-cpp`; GitHub Release chạy ngay khi lint pass để lỗi build ảnh không bao giờ chặn release.
 - GitLab CI: the `release:` job image lacked the `release-cli` binary → `registry.gitlab.com/gitlab-org/release-cli:latest`. / Ảnh của job `release:` thiếu binary `release-cli` → dùng `registry.gitlab.com/gitlab-org/release-cli:latest`.
+- `docs/RELEASE.md`: the documented `gh api .../visibility` commands cannot work — the GitHub REST API/GraphQL have no package-visibility write endpoint; replaced with the web UI steps and direct settings links. / Các lệnh `gh api .../visibility` trong tài liệu không thể chạy được — REST API/GraphQL của GitHub không có endpoint ghi visibility gói; thay bằng các bước trên giao diện web và link settings trực tiếp.
+- `Dockerfile.vibe-kanban`: `bun install` builds `better-sqlite3` from source and node-gyp needs Python, make and g++ on the image → install `build-essential python3`. / `bun install` biên dịch `better-sqlite3` từ nguồn và node-gyp cần Python, make, g++ trên ảnh → cài `build-essential python3`.
+- `Dockerfile.vllm.spark`: `requirements/build.txt` no longer exists at vLLM v0.33.0 → install `requirements/build/cuda.txt` (the torch pin is stripped by `use_existing_torch.py`); test stage `requirements/nightly_torch_test.txt` → `requirements/test/nightly-torch.txt`; add a best-effort Rust toolchain for vLLM's optional Rust frontend. / `requirements/build.txt` không còn ở vLLM v0.33.0 → cài `requirements/build/cuda.txt` (ghim torch bị `use_existing_torch.py` loại bỏ); stage test `requirements/nightly_torch_test.txt` → `requirements/test/nightly-torch.txt`; thêm toolchain Rust cho frontend Rust tùy chọn của vLLM.
 
 ### Changed / Thay đổi
 

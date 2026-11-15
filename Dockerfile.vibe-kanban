@@ -39,6 +39,10 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends ca-certificates curl && \
     rm -rf /var/lib/apt/lists/*
 
+# EN: build-essential + python3 — node-gyp compiles better-sqlite3 (native
+#     module) during `bun install` and needs make, g++ and Python on the image.
+# VI: build-essential + python3 — node-gyp biên dịch better-sqlite3 (module
+#     native) khi `bun install` nên ảnh phải có make, g++ và Python.
 RUN mkdir -p -m 755 /etc/apt/keyrings && \
     curl -o /etc/apt/keyrings/githubcli-archive-keyring.gpg -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg && \
     chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg && \
@@ -48,6 +52,7 @@ RUN mkdir -p -m 755 /etc/apt/keyrings && \
     screen \
     git git-lfs gh \
     netcat-openbsd \
+    build-essential python3 \
     && rm -rf /var/lib/apt/lists/*
 
 # Create necessary directories / Tạo các thư mục cần thiết

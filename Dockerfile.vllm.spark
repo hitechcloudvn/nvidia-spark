@@ -102,8 +102,23 @@ COPY . .
 
 RUN python3 use_existing_torch.py
 
+# EN: Rust toolchain for vLLM's optional Rust frontend (setuptools-rust builds
+#     it during `setup.py bdist_wheel`). The extensions are optional — if the
+#     Rust build fails the wheel build continues without them.
+# VI: Toolchain Rust cho frontend Rust tùy chọn của vLLM (setuptools-rust build
+#     trong `setup.py bdist_wheel`). Các extension là tùy chọn — nếu build Rust
+#     lỗi thì wheel vẫn build tiếp mà không có chúng.
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain stable
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+# EN: vLLM v0.33.0+ keeps the build requirements in requirements/build/cuda.txt
+#     (older trees had requirements/build.txt). use_existing_torch.py above has
+#     already stripped the torch pin, so the nightly torch stays installed.
+# VI: vLLM v0.33.0+ để yêu cầu build trong requirements/build/cuda.txt (cây cũ
+#     dùng requirements/build.txt). use_existing_torch.py ở trên đã loại bỏ
+#     ghim torch nên torch nightly được giữ nguyên.
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv pip install --break-system-packages --system -r requirements/build.txt
+    uv pip install --break-system-packages --system -r requirements/build/cuda.txt
 
 ARG GIT_REPO_CHECK=0
 RUN --mount=type=bind,source=.git,target=.git \
@@ -229,7 +244,7 @@ FROM vllm-base AS test
 COPY tests/ tests/
 
 # install build and runtime dependencies without stable torch version
-COPY requirements/nightly_torch_test.txt requirements/nightly_torch_test.txt
+COPY requirements/test/nightly-torch.txt requirements/test/nightly-torch.txt
 
 # This timeout (in seconds) is necessary when installing some dependencies via uv since it's likely to time out
 # Reference: https://github.com/astral-sh/uv/pull/1694
@@ -245,7 +260,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 ENV HF_HUB_ENABLE_HF_TRANSFER 1
 
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv pip install --break-system-packages --system -r requirements/nightly_torch_test.txt
+    uv pip install --break-system-packages --system -r requirements/test/nightly-torch.txt
 
 # Logging to confirm the torch versions
 RUN pip freeze | grep -E 'torch|vllm|flashinfer'
